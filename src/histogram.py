@@ -31,6 +31,8 @@ def create_histogram_for_image(img, clr_res):
 
 def compute_CHD(video):
     nb_frames= video.shape[0]
+    nb_pixel_per_frame=  video[0].shape[0] * video[0].shape[1]
+
     p_array= np.empty((nb_frames), dtype= object)
     for frame in range(nb_frames):
         p_array[frame]= create_histogram_for_image(video[frame], 4)
@@ -39,8 +41,28 @@ def compute_CHD(video):
     for frame in range(nb_frames-1):
         chd[frame]= np.sum( np.abs(p_array[frame+1] - p_array[frame]) )
 
-    chd= np.divide(chd, p_array[0].shape[0] * p_array[0].shape[1])
+    chd= np.divide(chd, nb_pixel_per_frame)
+    chd= np.divide(chd, np.sum(chd))
+    
     return chd
+
+def compute_FAD(video):
+    nb_frames= video.shape[0]
+    video_width= video.shape[1]
+    video_height= video.shape[2]
+    nb_pixel_per_frame= video_height * video_width
+
+    deriv_p= np.zeros((nb_frames-1))
+
+    for f in range(nb_frames-1):
+        diff_pixels= np.abs( video[f+1,:,:,:] - video[f,:,:,:] )
+        diff_frame= np.sum(diff_pixels, axis=2)
+        deriv_p[f]= np.sum(diff_frame)
+
+    deriv_p= np.divide(deriv_p, nb_pixel_per_frame * 200)
+    deriv_p= np.divide(deriv_p, np.sum(deriv_p))
+    
+    return deriv_p
 
 
 def load_video(filename):
@@ -94,6 +116,12 @@ scale_clip=scale_video(main_clip, 40, 25)#, filename+"-scale.mp4")
 video_mtx, nb_frames, W, H= videoclip_to_matrix(scale_clip)
 
 CHD= compute_CHD(video_mtx)
+FAD= compute_FAD(video_mtx)
+
+plt.plot(CHD, label="CHD")
+plt.plot(FAD, label="FAD")
+plt.legend()
+plt.show()
 
 print ("Fin du test")
 
