@@ -9,24 +9,38 @@ Created on Wed Jun  1 22:29:04 2016
 import numpy as np
 
 from moviepy.editor import *
+import matplotlib.pyplot as plt
 
 import os
 import sys
-
+import math
 
 
 def create_histogram_for_image(img, clr_res):
     p= np.zeros(( 2**clr_res, 2**clr_res, 2**clr_res ))   #color RGB
+
+    img.astype(float)
+    img= np.multiply(img, 2**clr_res )
+    img= np.divide(img, 2**8)
+    img.astype(int)
+
     for line in img:
         for pixel in line:
-            val_r= pixel[0] // clr_res  
-            val_g= pixel[1] // clr_res
-            val_b= pixel[2] // clr_res
-            p[val_r, val_g, val_b]+=1 
+            p[pixel[0], pixel[1], pixel[2]]+=1
     return p
 
 def compute_CHD(video):
-    pass
+    nb_frames= video.shape[0]
+    p_array= np.empty((nb_frames), dtype= object)
+    for frame in range(nb_frames):
+        p_array[frame]= create_histogram_for_image(video[frame], 4)
+
+    chd= np.zeros((nb_frames-1))
+    for frame in range(nb_frames-1):
+        chd[frame]= np.sum( np.abs(p_array[frame+1] - p_array[frame]) )
+
+    chd= np.divide(chd, p_array[0].shape[0] * p_array[0].shape[1])
+    return chd
 
 
 def load_video(filename):
@@ -36,12 +50,27 @@ def load_video(filename):
     W,H = main_clip.size
     fps= main_clip.fps
     
-    print (fps)
     return main_clip
+
+def videoclip_to_matrix(videoclip):
+    nb_frames= math.ceil(videoclip.fps * videoclip.duration) # approximation, we can lose 1-2 frames at last
+    #nb_frames= sum(1 for x in videoclip.iter_frames()) # the exact one
+
+    video_width, video_height= videoclip.size
+    video_mtx= np.zeros((nb_frames ,video_height, video_width, 3))
+    print (video_mtx.shape)
+
+    count= 0
+    for frame in videoclip.iter_frames():
+        print(str(count+1)+'/'+ str(nb_frames))
+        video_mtx[count,:,:,:]=frame
+        count+=1
+
+    return video_mtx, nb_frames, video_width, video_height
+
 
 def save_video(video, filename):
     filename = os.path.expanduser(filename)
-
     print (filename)
     video.write_videofile(filename, codec='libx264', audio=False)
 
@@ -57,17 +86,16 @@ def scale_video(video, new_width, new_height, filename_dest=None):
     return scale_video
 
 
-def main():
-    print ("Debut du test")
-    filename= "~/Projet/epilspie/video-real-2.mp4"
-    main_clip= load_video(filename)
-    scale_clip=scale_video(main_clip, 200,320, filename+"-scale.mp4")
-    print (scale_clip.size)
+print ("Debut du test")
+filename= "~/Projet/Projet-Epilep/video/video-test-real-1.mp4"
+main_clip= load_video(filename)
+scale_clip=scale_video(main_clip, 40, 25)#, filename+"-scale.mp4")
 
-    print ("Fin du test")
-    
+video_mtx, nb_frames, W, H= videoclip_to_matrix(scale_clip)
+
+CHD= compute_CHD(video_mtx)
+
+print ("Fin du test")
 
 
 
-if __name__== '__main__':
-    main()
