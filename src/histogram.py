@@ -109,7 +109,7 @@ def scale_video(video, new_width, new_height, filename_dest=None):
 
 
 print ("Debut du test")
-filename= "~/Projet/Projet-Epilep/video/video-test-real-1.mp4"
+filename= "~/Projet/Projet-Epilep/video/video-test-synthesis-4.mov"
 main_clip= load_video(filename)
 scale_clip=scale_video(main_clip, 40, 25)#, filename+"-scale.mp4")
 
