@@ -66,29 +66,29 @@ def itfct(SIG, nfft, winSize, hopRatio):
 	return sig
 
 
-#def main():
-fe, sig= scipy.io.wavfile.read("audio_gammepno.wav")	 # le wav doit avoir un seul canal
+def main():
+	fe, sig= scipy.io.wavfile.read("audio_gammepno.wav")	 # le wav doit avoir un seul canal
 
-nfft= 2**10
-winSize= 2**10
-hopRatio= 1./4
+	nfft= 2**10
+	winSize= 2**10
+	hopRatio= 1./4
 
-SIG= tfct(sig, nfft, winSize, hopRatio)
+	SIG= tfct(sig, nfft, winSize, hopRatio)
 
-#plotTmp= np.abs(resTfct)			#test d'affichage
-#plotTmp= np.transpose(plotTmp)
-#plt.imshow(plotTmp, aspect='auto')
-#plt.show()
+	plotTmp= np.abs(resTfct)			#test d'affichage
+	plotTmp= np.transpose(plotTmp)
+	plt.imshow(plotTmp, aspect='auto')
+	plt.show()
 
-sigSyn= itfct(SIG, nfft, winSize, hopRatio)
+	sigSyn= itfct(SIG, nfft, winSize, hopRatio)
 
-plt.plot(sig)
-plt.plot(sigSyn)
-plt.show()
+	plt.plot(sig)
+	plt.plot(sigSyn)
+	plt.show()
 
-sd.play(sig)
-sd.play(sigSyn)
+	sd.play(sig)
+	sd.play(sigSyn)
 
 
-#if __name__ == "__main__":
-#	main()
+if __name__ == "__main__":
+	main()
