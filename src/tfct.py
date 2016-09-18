@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt  # temporaire
 import scipy.io.wavfile
 import math
 
-def tfct(sig, fe, nfft, winSize, hopSize):
+def tfct(sig, nfft, winSize, hopSize):
 		
 	hopSize= int(math.floor(winSize * hopRasio))
 	sigSize= sig.shape[0]
@@ -27,6 +27,9 @@ def tfct(sig, fe, nfft, winSize, hopSize):
 	return resTfct
 
 
+def itfct(SIG, nfft, winSize, hopSize):
+
+
 #def main():
 fe, sig= scipy.io.wavfile.read("audio_gammepno.wav")	 # le wav doit avoir un seul canal
 
@@ -34,7 +37,7 @@ nfft= 2**10
 winSize= 2**10
 hopRasio= 1./4
 
-SIG= tfct(sig, fe, nfft, winSize, hopSize)
+SIG= tfct(sig, nfft, winSize, hopSize)
 
 #plotTmp= np.abs(resTfct)			#test d'affichage
 #plotTmp= np.transpose(plotTmp)
