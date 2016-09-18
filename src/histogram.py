@@ -59,7 +59,7 @@ def compute_FAD(video):
         diff_frame= np.sum(diff_pixels, axis=2)
         deriv_p[f]= np.sum(diff_frame)
 
-    deriv_p= np.divide(deriv_p, nb_pixel_per_frame * 200)
+    deriv_p= np.divide(deriv_p, nb_pixel_per_frame * 200)  #le 200 est arbitraire 
     deriv_p= np.divide(deriv_p, np.sum(deriv_p))
     
     return deriv_p
@@ -90,12 +90,10 @@ def videoclip_to_matrix(videoclip):
 
     return video_mtx, nb_frames, video_width, video_height
 
-
 def save_video(video, filename):
     filename = os.path.expanduser(filename)
     print (filename)
     video.write_videofile(filename, codec='libx264', audio=False)
-
 
 def scale_video(video, new_width, new_height, filename_dest=None):
     print (new_height)
