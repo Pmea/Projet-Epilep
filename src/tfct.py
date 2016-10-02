@@ -28,7 +28,7 @@ def tfct(sig, nfft, winSize, hopRatio):
 
 	return resTfct
 
-def ola(win, hopSize, nbBin): #ola va calculer le gain que l'adition de fenetre va apporter
+def ola(win, winSize, hopSize, nbBin): #ola va calculer le gain que l'adition de fenetre va apporter
 	winOla= np.zeros(nbBin * hopSize + winSize)
 	for b in range(0,nbBin):
 		indDeb= b * hopSize
@@ -55,27 +55,28 @@ def itfct(SIG, nfft, winSize, hopRatio):
 		indDeb= b * hopSize
 		indFin= (b * hopSize) + winSize
 		
-		ys = np.real(np.fft.ifft(SIG[b,:]))
+		ys = np.real(np.fft.ifft(SIG[b,:]))						##probleme dans ma ifft
 		ys= ys * win
 		sigSyn[indDeb:indFin]= sigSyn[indDeb:indFin] + ys 	
 
 	#normaliser le signal
-	winOla= ola(win*win, hopSize, nbBin)
+	winOla= ola(win*win, winSize, hopSize, nbBin)
 	sigSyn= sigSyn / np.max(winOla)
 
-	return sig
+	return sigSyn
+
 
 
 def main():
 	fe, sig= scipy.io.wavfile.read("audio_gammepno.wav")	 # le wav doit avoir un seul canal
 
-	nfft= 2**10
+	nfft= 2**14
 	winSize= 2**10
 	hopRatio= 1./4
 
 	SIG= tfct(sig, nfft, winSize, hopRatio)
 
-	plotTmp= np.abs(resTfct)			#test d'affichage
+	plotTmp= np.abs(SIG)			#test d'affichage
 	plotTmp= np.transpose(plotTmp)
 	plt.imshow(plotTmp, aspect='auto')
 	plt.show()
@@ -86,8 +87,11 @@ def main():
 	plt.plot(sigSyn)
 	plt.show()
 
-	sd.play(sig)
-	sd.play(sigSyn)
+	sig= np.divide(sig, np.max(sig))
+	sigSyn= np.divide(sigSyn, np.max(sigSyn))
+
+	#sd.play(sig)
+	#sd.play(sigSyn)
 
 
 if __name__ == "__main__":
