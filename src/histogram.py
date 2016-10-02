@@ -69,6 +69,33 @@ def compute_FAD(video):
 def compute_tfct_one_pixel():
     pass
 
+def resample_data(v_sig, coeff):
+    v_new_sig= np.zeros(v_sig.shape[0] * coeff )
+    new_sig_len= v_new_sig.shape[0]
+    for i in range (0, new_sig_len):
+        ind= int(i/coeff)                        
+        v_new_sig[i]= v_sig[ind]
+    return v_new_sig
+
+def apply_conv(v_sig, v_filter):
+    v_conv_sig= np.convolve(v_sig, v_filter, mode='full')
+    return v_conv_sig[2:-2]                                 #la convolution a N+M+1 point. 
+                                                            #dans notre cas M = 3 donc il faut retirer 4 points
+
+def compute_spectral_produit(m_tfSig, nfft, H):
+    #calcule de R
+    Rmax= int(np.floor((nfft / (2*H))))
+    #calcule du produit spectral
+    v_P= np.ones(Rmax)
+    for i in range(0, Rmax):
+        for h in range(0,H):
+            v_P[i] = v_P[i] * np.abs(H * m_tfSig[h*i])
+    return v_P
+
+
+def compute_spectral_sum(m_tfsig):
+
+
 
 def compute_tfct_all_pixel(video):
     nb_frames= video.shape[0]
@@ -76,44 +103,49 @@ def compute_tfct_all_pixel(video):
     video_height= video.shape[2]
     nb_pixel_per_frame= video_height * video_width
 
-   # deriv_p= compute_FAD(video)
-
     deriv_p= np.zeros((nb_frames-1))
 
     for f in range(nb_frames-1):
-        diff_pixels= video[f+1,:,:,:] - video[f,:,:,:] #on reviens au probleme des choses qui se compence #tf pour tous les points puis somme # reflechir un autre algo
+        diff_pixels= video[f+1,:,:,:] - video[f,:,:,:]
         diff_frame= np.sum(diff_pixels, axis=2)
         deriv_p[f]= np.sum(diff_frame)
 
-    ##test 
+    # test 
     ## resample 
-    deriv_p_resample= scipy.signal.resample( deriv_p, (nb_frames-1)*2)    
-    ## multiplication des samples
-    deriv_p_mult2= np.zeros(3*(nb_frames-1))
-    for i in range(0, 3*(nb_frames-1)): #double le nombre d'echantillon
-        deriv_p_mult2[i]= deriv_p[i/3]
-   
-    deriv_p_mult2_filtre= np.zeros(3*(nb_frames-1))
+    deriv_p_elev= resample_data(v_sig, 5)
+    ## filtrage
+    v_fen= np.array([0.25, 0.5, 1, 0.5, 0.25])
+    deriv_p_elev= apply_conv(deriv_p_elev, v_fen)
 
-    for i in range(1, 3*(nb_frames-1)-1): 
-        deriv_p_mult2_filtre[i]= (1/2.*deriv_p_mult2[i+1] + deriv_p_mult2[i] + 1/2. *deriv_p_mult2[i-1]) / 2.
 
-    deriv_p= deriv_p_mult2_filtre
     #calcule de la tf global
     nfft= 2**10                                     
-    winSize= 2**8
+    winSize= 2**10
     hopRatio= 1./4
 
-    SIG= tfct.tfct(deriv_p, nfft, winSize, hopRatio)
+    SIG= tfct.tfct(deriv_p_elev, nfft, winSize, hopRatio)           #verifier que la tfct n'a pas de bug #si elle n'en a pas voir pour meilleur fenetre (plus d'attenuation)
+    nb_bin= SIG.shape[0]
+    
+    H=4    # si Rmax est superieur a nfft il y a du recouvrement donc ca ne marche pas 
 
-    SIG= np.abs(SIG)
-    SIG= np.transpose(SIG)
+    v_max_P= np.zeros(nb_bin)
+    for i in range (0, nb_bin):
+        v_P=compute_spectral_produit(SIG[i,:], nfft, H)
+        v_max_P[i]= np.argmax(v_P)
 
-    max_sig= np.argmax(SIG[:nfft/2], axis=0)
-
-    plt.imshow(SIG, aspect="auto")
-    plt.plot(max_sig, c='r')
+    plt.plot(v_max_P)
     plt.show()
+
+    SIG_abs= np.abs(SIG)
+    SIG_abs= np.transpose(SIG_abs)
+
+    max_sig= np.argmax(SIG_abs[:nfft/2], axis=0)
+
+    plt.imshow(np.transpose(np.abs(SIG)), aspect="auto")
+    plt.plot(max_sig, c='r')
+    plt.plot(v_max_P, c='y')
+    plt.show()
+
 
     #nb_deriv= deriv_p.shape()[0]
     #for f in range(0, nb_frames):
@@ -163,23 +195,27 @@ def scale_video(video, new_width, new_height, filename_dest=None):
 
     return scale_video
 
+def main():
+    print ("Debut du test")
+    filename= "~/Projet/Projet-Epilep/video/video-test-synthesis-4.mov"
+    main_clip= load_video(filename)
+    scale_clip=scale_video(main_clip, 40, 25)#, filename+"-scale.mp4")
 
-print ("Debut du test")
-filename= "~/Projet/Projet-Epilep/video/video-test-synthesis-4.mov"
-main_clip= load_video(filename)
-scale_clip=scale_video(main_clip, 40, 25)#, filename+"-scale.mp4")
+    video_mtx, nb_frames, W, H= videoclip_to_matrix(scale_clip)
 
-video_mtx, nb_frames, W, H= videoclip_to_matrix(scale_clip)
+    CHD= compute_CHD(video_mtx)
+    FAD= compute_FAD(video_mtx)
 
-CHD= compute_CHD(video_mtx)
-FAD= compute_FAD(video_mtx)
+    plt.plot(CHD, label="CHD")
+    plt.plot(FAD, label="FAD")
+    plt.legend()
+    plt.show()
 
-plt.plot(CHD, label="CHD")
-plt.plot(FAD, label="FAD")
-plt.legend()
-plt.show()
+    print ("Fin du test")
 
-print ("Fin du test")
+
+if __name__ == "__main__":
+    main()
 
 
 
