@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt  # temporaire
 
+import scipy as sp
 import scipy.io.wavfile
 import math
 import sounddevice as sd
@@ -18,7 +19,7 @@ def tfct(sig, nfft, winSize, hopRatio):
 	resTfct= np.empty((nbBin, nfft), np.complex128)
 	
 	#calculer la fenetre de hanning
-	win= np.hanning(winSize)
+	win= sp.signal.blackmanharris(winSize)
 
 	#pour toute les trames calculer la fft
 	for b in range(0, nbBin):
@@ -48,8 +49,8 @@ def itfct(SIG, nfft, winSize, hopRatio):
 	#reserver de la memoire pour le resultat
 	sigSyn= np.zeros(sigSize)
 
-	#calculer la fenetre de hanning
-	win= np.hanning(winSize)
+	#calculer la fenetre de blackman-harris4
+	win= sp.signal.blackmanharris(winSize)
 
 	for b in range(0, nbBin):
 		indDeb= b * hopSize
@@ -72,7 +73,7 @@ def main():
 
 	nfft= 2**14
 	winSize= 2**10
-	hopRatio= 1./4
+	hopRatio= 1./8.
 
 	SIG= tfct(sig, nfft, winSize, hopRatio)
 
