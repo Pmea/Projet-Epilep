@@ -16,7 +16,7 @@ import os
 import sys
 import math
 
-import scipy.signal
+import scipy.signal as sp_sgn
 
 def create_histogram_for_image(img, clr_res):
     p= np.zeros(( 2**clr_res, 2**clr_res, 2**clr_res ))   #color RGB
@@ -93,7 +93,7 @@ def compute_spectral_produit(m_tfSig, nfft, H):
     return v_P
 
 
-def compute_spectral_sum(m_tfsig, nfft, H):
+def compute_spectral_sum(m_tfSig, nfft, H):
     #calcule de R
     Rmax= int(np.floor((nfft / (2*H))))
     #calcule du produit spectral
@@ -121,12 +121,11 @@ def compute_tfct_all_pixel(video):
     ## resample 
     deriv_p_elev= resample_data(deriv_p, 10)
     ## filtrage
-    v_fen= np.array([0.25, 0.5, 1, 0.5, 0.25])
+    v_fen= sp_sng.triang(10)
     deriv_p_elev= apply_conv(deriv_p_elev, v_fen)
 
-
     #calcule de la tf global
-    nfft= 2**10                                 
+    nfft= 2**12                                 
     winSize= 2**10
     hopRatio= 1./8 
 
@@ -140,6 +139,11 @@ def compute_tfct_all_pixel(video):
         v_P=compute_spectral_produit(SIG[i,:], nfft, H)
         v_max_P[i]= np.argmax(v_P)
 
+    v_max_S= np.zeros(nb_bin)
+    for i in range (0, nb_bin):
+        v_S=compute_spectral_sum(SIG[i,:], nfft, H)
+        v_max_S[i]= np.argmax(v_S)
+
 
     SIG_abs= np.abs(SIG)
     SIG_abs= np.transpose(SIG_abs)
@@ -147,11 +151,13 @@ def compute_tfct_all_pixel(video):
     max_sig= np.argmax(SIG_abs[:nfft/2], axis=0)
 
     plt.plot(v_max_P, c='y')
+    plt.plot(v_max_S, c='g')
     plt.plot(max_sig, c='r')
     plt.show()
 
     plt.imshow(np.transpose(np.abs(SIG)), aspect="auto")
     plt.plot(max_sig, c='r')
+    plt.plot(v_max_S, c='g')
     plt.plot(v_max_P, c='y')
     plt.show()
 
