@@ -169,7 +169,7 @@ def compute_tfct_all_pixel(video):
     m_filter= np.zeros((nb_filters, nfft/2))
     for f in range(0, nb_filters):
         tmp= int(freq_filters[f])
-        v_pos_filter[tmp]= 1  #soustraire -1/2 taille du iltre
+        v_pos_filter[tmp]= 1  #soustraire -1/2 taille du iltre  #c'est a ce moment qu'il faut lire dans un fichier et dire si charger le bon coefficient
         m_filter[f]= np.convolve(v_win, v_pos_filter, mode='same') 
         v_pos_filter= v_pos_filter * 0
     #verifier qu'il y a bien un recouvrement complet
