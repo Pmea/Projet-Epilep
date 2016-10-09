@@ -5,7 +5,6 @@ Created on Wed Jun  1 22:29:04 2016
 @author: Pmea
 """
 
-
 import numpy as np
 
 from moviepy.editor import *
@@ -16,7 +15,7 @@ import os
 import sys
 import math
 
-import scipy.signal as sp_sgn
+import scipy.signal as sp_sng
 
 def create_histogram_for_image(img, clr_res):
     p= np.zeros(( 2**clr_res, 2**clr_res, 2**clr_res ))   #color RGB
@@ -48,7 +47,7 @@ def compute_CHD(video):
     
     return chd
 
-def compute_FAD(video):
+def compute_FAD(video):         #mesurer l'agitation 
     nb_frames= video.shape[0]
     video_width= video.shape[1]
     video_height= video.shape[2]
@@ -119,14 +118,15 @@ def compute_tfct_all_pixel(video):
 
     # test 
     ## resample 
-    deriv_p_elev= resample_data(deriv_p, 10)
+    resample_factor= 11
+    deriv_p_elev= resample_data(deriv_p, resample_factor)
     ## filtrage
-    v_fen= sp_sng.triang(10)
+    v_fen= sp_sng.triang(resample_factor)
     deriv_p_elev= apply_conv(deriv_p_elev, v_fen)
 
     #calcule de la tf global
     nfft= 2**12                                 
-    winSize= 2**10
+    winSize= 2**12          #resolution de l'analise winSize * hopRatio
     hopRatio= 1./8 
 
     SIG= tfct.tfct(deriv_p_elev, nfft, winSize, hopRatio)           #verifier que la tfct n'a pas de bug #si elle n'en a pas voir pour meilleur fenetre (plus d'attenuation)
@@ -148,27 +148,45 @@ def compute_tfct_all_pixel(video):
     SIG_abs= np.abs(SIG)
     SIG_abs= np.transpose(SIG_abs)
 
-    max_sig= np.argmax(SIG_abs[:nfft/2], axis=0)
+    #avec le max on recupere des frequence reduit
+    # freq_red= freq_red * fe / (nfft/2)
+    
+    #prendre l'agitation absolu et non pas relative
+    #on fait abs(X(i,j)) + abs(X(i+1,j+1))
+    #et pas abs(X(i,j)+X(i+1,j+1))
 
-    plt.plot(v_max_P, c='y')
-    plt.plot(v_max_S, c='g')
-    plt.plot(max_sig, c='r')
-    plt.show()
+    #il faut faire les filtres pour chaque frequence, puis 
+    # on la les frequence principal a chaque fois
+    freq_filters= np.arange(4, 60)
+    nb_filters= freq_filters.shape[0]
+    fe= 60 * resample_factor
+    freq_red_filters= freq_filters * (nfft/2.) / fe
 
-    plt.imshow(np.transpose(np.abs(SIG)), aspect="auto")
-    plt.plot(max_sig, c='r')
-    plt.plot(v_max_S, c='g')
-    plt.plot(v_max_P, c='y')
-    plt.show()
+    #creation du filtre
+    win_size= int(math.ceil( 2. *(nfft/2.)/fe ) )
+    v_win= np.hanning(win_size)
+    v_pos_filter= np.zeros(nfft/2)
+    m_filter= np.zeros((nb_filters, nfft/2))
+    for f in range(0, nb_filters):
+        tmp= int(freq_filters[f])
+        v_pos_filter[tmp]= 1  #soustraire -1/2 taille du iltre
+        m_filter[f]= np.convolve(v_win, v_pos_filter, mode='same') 
+        v_pos_filter= v_pos_filter * 0
+    #verifier qu'il y a bien un recouvrement complet
 
+    #on multipli les filtres avec la tfct
+    m_tfct_filtered= np.zeros((nb_filters, nb_bin, nfft/2))
+    m_sum_activity= np.zeros((nb_filters, nb_bin))
+    for f in range(0, nb_filters):
+        for b in range(0, nb_bin):
+            m_tfct_filtered[f,b]= m_filter[f] * SIG_abs[:nfft/2,b] #changer en calcule matriciel
+        m_sum_activity[f]= np.sum(m_tfct_filtered[f], axis=1)
+       #plt.imshow(m_tfct_filtered[-1], aspect='auto', interpolation='none');plt.show()
+    #plt.imshow(m_sum_activity, aspect='auto', interpolation='none');plt.show()
 
-    #nb_deriv= deriv_p.shape()[0]
-    #for f in range(0, nb_frames):
-     #   for i in range(video_height):
-      #      for j in range(video_width):
-                
-    #on fait la tfct de ce signal
+    #puis on regarde l'intensité pour chaque moment
 
+    #on creer des filtres centrer sur des valeurs et on analyse le signal et on pondaire selon ce que l'utilisateur rentre (avec fichier de config par defaut) 
 
 def load_video(filename):
     filename = os.path.expanduser(filename)
