@@ -103,6 +103,29 @@ def compute_spectral_sum(m_tfSig, nfft, H):
     return v_S
 
 
+def compute_filtreband(fe, nfft, nb_harmonic, freq_range, filter_size_hz):
+	v_win= np.hanning(int(filter_size_hz/ float(fe) * nfft))
+
+	nb_filters= freq_range[1] - freq_range[0]
+	m_filter= np.zeros((nb_filters, nfft/2))
+
+	v_g= np.zeros((nfft/2))
+
+	for n in range(freq_range[0], freq_range[1]):
+		print n 
+		freq_red= n / float(fe) * nfft
+
+		for h in range(0, nb_harmonic):
+			freq_harmo_red= freq_red * (h+1)
+
+			v_g[ freq_harmo_red - len(v_win)/2]= 1
+		m_filter[n - freq_range[0]]= np.convolve(v_g, v_win,  mode='same') 
+		v_g= v_g *  0.
+
+	plt.imshow(m_filter, aspect='auto', interpolation='none'); plt.show()
+	return m_filter
+
+
 def compute_tfct_all_pixel(video):
     nb_frames= video.shape[0]
     video_width= video.shape[1]
@@ -182,7 +205,7 @@ def compute_tfct_all_pixel(video):
             m_tfct_filtered[f,b]= m_filter[f] * SIG_abs[:nfft/2,b] #changer en calcule matriciel
         m_sum_activity[f]= np.sum(m_tfct_filtered[f], axis=1)
        #plt.imshow(m_tfct_filtered[-1], aspect='auto', interpolation='none');plt.show()
-    #plt.imshow(m_sum_activity, aspect='auto', interpolation='none');plt.show()
+    plt.imshow(m_sum_activity, aspect='auto', interpolation='none');plt.show()
 
     #puis on regarde l'intensité pour chaque moment
 
